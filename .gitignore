@@ -1,0 +1,48 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Sensitive files - DO NOT COMMIT
+*token*.go
+*test*.go
+verify*.go
+real*.go
+temp*.go
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# 示例配置文件（包含敏感信息）
+config.json
+token.txt 
