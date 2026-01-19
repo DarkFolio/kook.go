@@ -4,8 +4,8 @@
 
 ## 相关文档
 
-- [KOOK Go SDK API文档](https://blog.lastwhisper.net/article/16)
-- [KOOK API 错误代码文档](https://blog.lastwhisper.net/article/17)
+- [KOOK Go SDK API文档](https://note.dkfolio.com/api/)
+- [KOOK API 错误代码文档](https://note.dkfolio.com/errors.html)
 
 ## 功能特性
 
