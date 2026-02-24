@@ -50,96 +50,54 @@ func (s *VoiceService) LeaveVoiceChannel(ctx context.Context, channelID string) 
 
 // GetVoiceChannelUsers 获取语音频道用户列表
 func (s *VoiceService) GetVoiceChannelUsers(ctx context.Context, channelID string) ([]VoiceUser, error) {
-	if channelID == "" {
-		return nil, fmt.Errorf("频道ID不能为空")
-	}
-
-	query := map[string]string{
-		"channel_id": channelID,
-	}
-
-	resp, err := s.client.Get(ctx, "voice/users", query)
-	if err != nil {
-		return nil, err
-	}
-
-	var users []VoiceUser
-	if err := json.Unmarshal(resp.Data, &users); err != nil {
-		return nil, fmt.Errorf("解析语音频道用户列表失败: %w", err)
-	}
-
-	return users, nil
+	return nil, fmt.Errorf("KOOK v3 官方接口未提供 voice/users；请改用 GetJoinedVoiceChannels")
 }
 
 // MuteUser 静音用户
 func (s *VoiceService) MuteUser(ctx context.Context, channelID, userID string) error {
-	if channelID == "" {
-		return fmt.Errorf("频道ID不能为空")
-	}
-	if userID == "" {
-		return fmt.Errorf("用户ID不能为空")
-	}
-
-	params := map[string]interface{}{
-		"channel_id": channelID,
-		"user_id":    userID,
-	}
-
-	_, err := s.client.Post(ctx, "voice/mute", params)
-	return err
+	return fmt.Errorf("KOOK v3 官方接口未提供 voice/mute")
 }
 
 // UnmuteUser 取消静音用户
 func (s *VoiceService) UnmuteUser(ctx context.Context, channelID, userID string) error {
-	if channelID == "" {
-		return fmt.Errorf("频道ID不能为空")
-	}
-	if userID == "" {
-		return fmt.Errorf("用户ID不能为空")
-	}
-
-	params := map[string]interface{}{
-		"channel_id": channelID,
-		"user_id":    userID,
-	}
-
-	_, err := s.client.Post(ctx, "voice/unmute", params)
-	return err
+	return fmt.Errorf("KOOK v3 官方接口未提供 voice/unmute")
 }
 
 // DeafenUser 闭麦用户
 func (s *VoiceService) DeafenUser(ctx context.Context, channelID, userID string) error {
-	if channelID == "" {
-		return fmt.Errorf("频道ID不能为空")
-	}
-	if userID == "" {
-		return fmt.Errorf("用户ID不能为空")
-	}
-
-	params := map[string]interface{}{
-		"channel_id": channelID,
-		"user_id":    userID,
-	}
-
-	_, err := s.client.Post(ctx, "voice/deafen", params)
-	return err
+	return fmt.Errorf("KOOK v3 官方接口未提供 voice/deafen")
 }
 
 // UndeafenUser 取消闭麦用户
 func (s *VoiceService) UndeafenUser(ctx context.Context, channelID, userID string) error {
+	return fmt.Errorf("KOOK v3 官方接口未提供 voice/undeafen")
+}
+
+// GetJoinedVoiceChannels 获取机器人已加入的语音频道列表
+func (s *VoiceService) GetJoinedVoiceChannels(ctx context.Context) ([]VoiceConnectionInfo, error) {
+	resp, err := s.client.Get(ctx, "voice/list", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var conns []VoiceConnectionInfo
+	if err := json.Unmarshal(resp.Data, &conns); err != nil {
+		return nil, fmt.Errorf("解析语音频道列表失败: %w", err)
+	}
+	return conns, nil
+}
+
+// KeepAliveVoiceChannel 续期语音频道占用
+func (s *VoiceService) KeepAliveVoiceChannel(ctx context.Context, channelID string) error {
 	if channelID == "" {
 		return fmt.Errorf("频道ID不能为空")
-	}
-	if userID == "" {
-		return fmt.Errorf("用户ID不能为空")
 	}
 
 	params := map[string]interface{}{
 		"channel_id": channelID,
-		"user_id":    userID,
 	}
 
-	_, err := s.client.Post(ctx, "voice/undeafen", params)
+	_, err := s.client.Post(ctx, "voice/keep-alive", params)
 	return err
 }
 
@@ -155,10 +113,10 @@ type VoiceConnectionInfo struct {
 
 // VoiceUser 语音频道用户
 type VoiceUser struct {
-	User        User `json:"user"`         // 用户信息
-	Muted       bool `json:"muted"`        // 是否被静音
-	Deafened    bool `json:"deafened"`     // 是否被闭麦
-	SelfMuted   bool `json:"self_muted"`   // 是否自我静音
+	User         User `json:"user"`          // 用户信息
+	Muted        bool `json:"muted"`         // 是否被静音
+	Deafened     bool `json:"deafened"`      // 是否被闭麦
+	SelfMuted    bool `json:"self_muted"`    // 是否自我静音
 	SelfDeafened bool `json:"self_deafened"` // 是否自我闭麦
-	Speaking    bool `json:"speaking"`     // 是否正在说话
-} 
+	Speaking     bool `json:"speaking"`      // 是否正在说话
+}

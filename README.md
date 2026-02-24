@@ -27,6 +27,7 @@
 package main
 
 import (
+    "context"
     "fmt"
     "log"
     "github.com/yourusername/kook-go-sdk/kook"
@@ -37,7 +38,7 @@ func main() {
     client := kook.NewClient("你的机器人令牌")
     
     // 获取机器人信息
-    user, err := client.User.GetMe()
+    user, err := client.User.GetMe(context.Background())
     if err != nil {
         log.Fatal(err)
     }
@@ -50,47 +51,54 @@ func main() {
 ### 消息操作
 
 ```go
-// 向频道发送消息
-message, err := client.Message.SendMessage(kook.SendMessageParams{
+// 向频道发送消息（默认 type=9，即 KMarkdown）
+message, err := client.Message.SendMessage(context.Background(), kook.SendMessageParams{
     TargetID: "频道ID",
     Content:  "你好，KOOK！",
-    MsgType:  1, // 文本消息
 })
 if err != nil {
     log.Printf("发送消息失败: %v", err)
     return
 }
 
+// 发送卡片消息
+_, err = client.Message.SendCardMessage(context.Background(), kook.SendMessageParams{
+    TargetID: "频道ID",
+    Content:  `[{"type":"card","theme":"primary","modules":[{"type":"section","text":{"type":"plain-text","content":"卡片消息"}}]}]`,
+})
+
 // 获取消息列表
-messages, err := client.Message.GetMessageList("频道ID", kook.GetMessageListParams{
+messages, err := client.Message.GetMessageList(context.Background(), "频道ID", kook.GetMessageListParams{
     PageSize: 50,
 })
 if err != nil {
     log.Printf("获取消息列表失败: %v", err)
     return
 }
+
+// 置顶消息（需要 msg_id + target_id）
+err = client.Message.PinMessage(context.Background(), "消息ID", "频道ID")
 ```
 
 ### 服务器和频道管理
 
 ```go
 // 获取服务器列表
-guilds, err := client.Guild.GetGuildList(1, 10, "")
+guilds, err := client.Guild.GetGuildList(context.Background(), 1, 10, "")
 if err != nil {
     log.Printf("获取服务器列表失败: %v", err)
     return
 }
 
 // 获取服务器的频道列表
-channels, err := client.Channel.GetChannelList("服务器ID", 1, 10, "")
+channels, err := client.Channel.GetChannelList(context.Background(), "服务器ID", 1, 10, "")
 if err != nil {
     log.Printf("获取频道列表失败: %v", err)
     return
 }
 
 // 创建新频道
-channel, err := client.Channel.CreateChannel(kook.CreateChannelParams{
-    GuildID: "服务器ID",
+channel, err := client.Channel.CreateChannel(context.Background(), "服务器ID", kook.CreateChannelParams{
     Name:    "新频道",
     Type:    1, // 文字频道
 })
@@ -125,35 +133,31 @@ select {} // 永久阻塞
 
 ```go
 // 获取角色列表
-roles, err := client.Role.GetRoleList("服务器ID", 1, 10)
+roles, err := client.Role.GetRoleList(context.Background(), "服务器ID", 1, 10)
 if err != nil {
     log.Printf("获取角色列表失败: %v", err)
     return
 }
 
 // 创建新角色
-role, err := client.Role.CreateRole("服务器ID", kook.CreateRoleParams{
-    Name:        "新角色",
-    Color:       0xFF0000, // 红色
-    Permissions: 1024,     // 基础权限
-})
+role, err := client.Role.CreateRole(context.Background(), "服务器ID", "新角色")
 
 // 给用户分配角色
-err = client.Role.GrantRole("服务器ID", "用户ID", role.RoleID)
+_, err = client.Role.GrantRole(context.Background(), "服务器ID", "用户ID", role.RoleID)
 ```
 
 ### 资源上传
 
 ```go
 // 上传图片
-asset, err := client.Asset.CreateAsset("路径/到/图片.png")
+asset, err := client.Asset.UploadFile(context.Background(), "路径/到/图片.png")
 if err != nil {
     log.Printf("上传资源失败: %v", err)
     return
 }
 
 // 在消息中使用上传的资源URL
-message, err := client.Message.SendMessage(kook.SendMessageParams{
+message, err := client.Message.SendMessage(context.Background(), kook.SendMessageParams{
     TargetID: "频道ID",
     Content:  asset.URL,
     MsgType:  2, // 图片消息
@@ -209,7 +213,7 @@ go func() {
 ### 错误处理最佳实践
 
 ```go
-user, err := client.User.GetMe()
+user, err := client.User.GetMe(context.Background())
 if err != nil {
     if kookErr, ok := kook.IsKOOKError(err); ok {
         switch {
@@ -268,7 +272,7 @@ if err != nil {
 SDK 提供完善的错误处理机制：
 
 ```go
-user, err := client.User.GetMe()
+user, err := client.User.GetMe(context.Background())
 if err != nil {
     // 检查是否为 API 错误
     if apiErr, ok := kook.IsAPIError(err); ok {

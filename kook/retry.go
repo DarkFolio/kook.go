@@ -66,9 +66,8 @@ func IsRetryableError(err error) bool {
 
 	// 向后兼容的 APIError 检查
 	if apiErr, ok := err.(*APIError); ok {
-		// 5xx 服务器错误通常可重试
-		// 429 速率限制错误也可重试
-		return (apiErr.Code >= 500 && apiErr.Code < 600) || apiErr.Code == 429
+		// KOOK 5xx 是 50xxx；42900 为限流
+		return (apiErr.Code >= 50000 && apiErr.Code < 60000) || apiErr.Code == 429 || apiErr.Code == 42900
 	}
 
 	return false

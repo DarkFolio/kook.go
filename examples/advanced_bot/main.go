@@ -27,16 +27,19 @@ func main() {
 
 	// 设置消息处理器
 	wsClient.OnEvent(kook.EventTypeTextMessage, func(event *kook.Event) {
+		author := getEventAuthor(event.Extra)
+		guildID := getEventGuildID(event.Extra)
+
 		// 忽略机器人消息
-		if event.Extra.Author.Bot {
+		if author.Bot {
 			return
 		}
 
 		content := strings.TrimSpace(event.Content)
 		channelID := event.TargetID
-		userID := event.Extra.Author.ID
+		userID := author.ID
 
-		log.Printf("收到用户 %s 的消息: %s", event.Extra.Author.Username, content)
+		log.Printf("收到用户 %s 的消息: %s", author.Username, content)
 
 		// 处理不同的命令
 		switch {
@@ -44,13 +47,13 @@ func main() {
 			handleHelpCommand(client, channelID)
 
 		case strings.HasPrefix(content, "!roles"):
-			handleRolesCommand(client, channelID, event.Extra.GuildID)
+			handleRolesCommand(client, channelID, guildID)
 
 		case strings.HasPrefix(content, "!emojis"):
-			handleEmojisCommand(client, channelID, event.Extra.GuildID)
+			handleEmojisCommand(client, channelID, guildID)
 
 		case strings.HasPrefix(content, "!blacklist"):
-			handleBlacklistCommand(client, channelID, event.Extra.GuildID)
+			handleBlacklistCommand(client, channelID, guildID)
 
 		case strings.HasPrefix(content, "!pin"):
 			handlePinCommand(client, channelID, event.MsgID)
@@ -71,16 +74,16 @@ func main() {
 			handleRegionsCommand(client, channelID)
 
 		case strings.HasPrefix(content, "!invites"):
-			handleInvitesCommand(client, channelID, event.Extra.GuildID)
+			handleInvitesCommand(client, channelID, guildID)
 
 		case strings.HasPrefix(content, "!badges"):
-			handleBadgesCommand(client, channelID, event.Extra.GuildID)
+			handleBadgesCommand(client, channelID, guildID)
 
 		case strings.HasPrefix(content, "!nickname"):
 			parts := strings.Split(content, " ")
 			if len(parts) > 1 {
 				nickname := strings.Join(parts[1:], " ")
-				handleNicknameCommand(client, channelID, event.Extra.GuildID, userID, nickname)
+				handleNicknameCommand(client, channelID, guildID, userID, nickname)
 			}
 
 		case strings.HasPrefix(content, "!upload"):
@@ -224,7 +227,7 @@ func handleBlacklistCommand(client *kook.Client, channelID, guildID string) {
 
 // 置顶消息命令
 func handlePinCommand(client *kook.Client, channelID, msgID string) {
-	err := client.Message.PinMessage(context.Background(), msgID)
+	err := client.Message.PinMessage(context.Background(), msgID, channelID)
 	if err != nil {
 		log.Printf("置顶消息失败: %v", err)
 		sendReply(client, channelID, "置顶消息失败："+err.Error())
@@ -376,9 +379,6 @@ func handleNicknameCommand(client *kook.Client, channelID, guildID, userID, nick
 
 // 文件上传命令
 func handleUploadCommand(client *kook.Client, channelID string) {
-	// 创建一个示例文本文件内容
-	content := "这是一个由KOOK机器人创建的示例文件。\n时间：" + fmt.Sprintf("%d", 1234567890)
-
 	// 由于Asset.UploadFileContent方法可能不存在，我们使用CreateAsset替代
 	// 这里只是演示，实际使用时需要传入真实的文件路径
 	sendReply(client, channelID, "文件上传功能演示 - 请提供实际文件路径使用Asset.CreateAsset方法")
@@ -394,6 +394,47 @@ func handleUploadCommand(client *kook.Client, channelID string) {
 	// sendReply(client, channelID, message)
 }
 
+type messageAuthor struct {
+	ID       string
+	Username string
+	Bot      bool
+}
+
+func getEventAuthor(extra interface{}) messageAuthor {
+	extraMap, ok := extra.(map[string]interface{})
+	if !ok {
+		return messageAuthor{}
+	}
+	authorMap, ok := extraMap["author"].(map[string]interface{})
+	if !ok {
+		return messageAuthor{}
+	}
+
+	return messageAuthor{
+		ID:       asString(authorMap["id"]),
+		Username: asString(authorMap["username"]),
+		Bot:      asBool(authorMap["bot"]),
+	}
+}
+
+func getEventGuildID(extra interface{}) string {
+	extraMap, ok := extra.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	return asString(extraMap["guild_id"])
+}
+
+func asString(v interface{}) string {
+	s, _ := v.(string)
+	return s
+}
+
+func asBool(v interface{}) bool {
+	b, _ := v.(bool)
+	return b
+}
+
 // 发送回复消息
 func sendReply(client *kook.Client, channelID, content string) {
 	params := kook.SendMessageParams{
@@ -407,4 +448,3 @@ func sendReply(client *kook.Client, channelID, content string) {
 		log.Printf("发送消息失败: %v", err)
 	}
 }
- 

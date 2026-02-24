@@ -69,13 +69,13 @@ func (e *KOOKError) Error() string {
 
 // IsRetryable 判断错误是否可重试
 func (e *KOOKError) IsRetryable() bool {
-	// 5xx 服务器错误通常可重试
-	if e.Code >= 500 && e.Code < 600 {
+	// KOOK 5xx 错误码通常是 50xxx
+	if e.Code >= 50000 && e.Code < 60000 {
 		return true
 	}
 
-	// 429 速率限制错误可重试
-	if e.Code == 429 {
+	// 429/42900 速率限制错误可重试
+	if e.Code == 429 || e.Code == 42900 {
 		return true
 	}
 
@@ -93,7 +93,7 @@ func (e *KOOKError) IsRetryable() bool {
 
 // IsRateLimited 判断是否为速率限制错误
 func (e *KOOKError) IsRateLimited() bool {
-	return e.Code == 429 || e.HTTPStatus == http.StatusTooManyRequests
+	return e.Code == 429 || e.Code == 42900 || e.HTTPStatus == http.StatusTooManyRequests
 }
 
 // IsAuthError 判断是否为认证错误

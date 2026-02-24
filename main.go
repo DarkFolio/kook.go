@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -20,7 +21,7 @@ func main() {
 	client := kook.NewClient(token)
 
 	// 获取机器人信息
-	user, err := client.User.GetMe()
+	user, err := client.User.GetMe(context.Background())
 	if err != nil {
 		log.Fatalf("获取机器人信息失败: %v", err)
 	}
@@ -32,7 +33,7 @@ func main() {
 	log.Printf("是否为机器人: %v", user.Bot)
 
 	// 获取服务器列表
-	guilds, err := client.Guild.GetGuildList(1, 5, "")
+	guilds, err := client.Guild.GetGuildList(context.Background(), 1, 5, "")
 	if err != nil {
 		log.Printf("获取服务器列表失败: %v", err)
 	} else {

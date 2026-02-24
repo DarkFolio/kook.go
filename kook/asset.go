@@ -3,7 +3,6 @@ package kook
 import (
 	"bytes"
 	"context"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -131,4 +130,4 @@ type Asset struct {
 	Type string `json:"type"` // 资源类型
 	Name string `json:"name"` // 文件名
 	Size int64  `json:"size"` // 文件大小
-} 
+}

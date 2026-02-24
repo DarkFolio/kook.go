@@ -137,7 +137,7 @@ func (ws *WebSocketClient) doConnect() error {
 		compress = 1
 	}
 
-	gateway, err := ws.client.Gateway.GetGateway(compress)
+	gateway, err := ws.client.Gateway.GetGateway(ws.ctx, compress)
 	if err != nil {
 		return fmt.Errorf("获取网关信息失败: %w", err)
 	}
@@ -195,8 +195,10 @@ func (ws *WebSocketClient) handleMessages() {
 		ws.isConnected = false
 		ws.connMu.Unlock()
 
-		// 尝试重连
-		ws.attemptReconnect()
+		// 主动关闭时不重连
+		if ws.ctx.Err() == nil {
+			ws.attemptReconnect()
+		}
 	}()
 
 	for {
@@ -245,6 +247,9 @@ func (ws *WebSocketClient) handleMessages() {
 
 // attemptReconnect 尝试重连
 func (ws *WebSocketClient) attemptReconnect() {
+	if ws.ctx.Err() != nil {
+		return
+	}
 	if ws.reconnectCount >= ws.maxReconnects {
 		ws.client.logger.Error("已达到最大重连次数，停止重连")
 		return
@@ -254,7 +259,12 @@ func (ws *WebSocketClient) attemptReconnect() {
 	ws.client.logger.Infof("开始第 %d 次重连尝试", ws.reconnectCount)
 
 	// 等待一段时间后重连
-	time.Sleep(ws.reconnectDelay * time.Duration(ws.reconnectCount))
+	delay := ws.reconnectDelay * time.Duration(ws.reconnectCount)
+	select {
+	case <-time.After(delay):
+	case <-ws.ctx.Done():
+		return
+	}
 
 	err := ws.doConnect()
 	if err != nil {
@@ -350,6 +360,10 @@ func (ws *WebSocketClient) handleHello(msg *WebSocketMessage) error {
 
 	ws.sessionID = hello.SessionID
 	ws.client.logger.Infof("WebSocket会话建立成功: %s", ws.sessionID)
+
+	if ws.heartbeatTicker != nil {
+		ws.heartbeatTicker.Stop()
+	}
 
 	// 启动心跳
 	ws.startHeartbeat()
@@ -462,7 +476,14 @@ func (ws *WebSocketClient) sendMessage(msg *WebSocketMessage) error {
 
 	ws.client.logger.Debugf("发送WebSocket消息: %s", string(data))
 
-	return ws.conn.WriteMessage(websocket.TextMessage, data)
+	ws.connMu.RLock()
+	conn := ws.conn
+	ws.connMu.RUnlock()
+	if conn == nil {
+		return fmt.Errorf("WebSocket连接不可用")
+	}
+
+	return conn.WriteMessage(websocket.TextMessage, data)
 }
 
 // decompress 解压数据
